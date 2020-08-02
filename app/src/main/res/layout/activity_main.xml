@@ -9,7 +9,7 @@
         android:id="@+id/btn_jump"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="进入H5页面" />
+        android:text="进入美团App" />
 
 
 </RelativeLayout>

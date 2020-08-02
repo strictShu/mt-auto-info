@@ -1,3 +1,14 @@
 <resources>
-    <string name="app_name">get post data</string>
+    <string name="app_name">mt</string>
+    <string name="description">自动获取信息</string>
+    <string name="phone">手机号:</string>
+    <string name="deviceiId">id:</string>
+    <string name="taskState">任务状态:</string>
+    <string name="phone_num">1760648</string>
+    <string name="action">激活</string>
+    <string name="tag">Tag:</string>
+    <string name="task">获取任务</string>
+    <string name="update">更新</string>
+    <string name="check">检测权限</string>
+    <string name="cmd">cmd</string>
 </resources>
