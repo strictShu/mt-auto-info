@@ -8,14 +8,21 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import com.hx.mt.common.AccessibilityHelper;
 import com.hx.mt.common.MtAppConst;
+import com.hx.mt.common.ProcessStatus;
 
 import java.util.List;
 
 public class MeiTuanAppAccessibilityService extends AccessibilityService {
 
+    MtAppProcess mtAppProcess;
+    private ProcessStatus processStatus;
+
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
+        mtAppProcess = new MtAppProcess();
+        processStatus = new ProcessStatus();
+        Log.e("tag-mTypelassName", "sucess");
     }
 
     @Override
@@ -27,7 +34,7 @@ public class MeiTuanAppAccessibilityService extends AccessibilityService {
         System.err.println("------------------------------------------------------");
         Log.e("tag-mTypelassName", "----" + mClassName + "----" + eventType);
         if (mClassName.equals(MtAppConst.MainActivity)) {
-          //  AccessibilityHelper.findNodeByTextAndPerformClick(getRoot(), "骑车");
+            //  AccessibilityHelper.findNodeByTextAndPerformClick(getRoot(), "骑车");
 //            AccessibilityNodeInfo nodeInfo = AccessibilityHelper.findNodeInfosByDes(getRoot(), "外卖");
 //            AccessibilityHelper.performClick(nodeInfo);
 
@@ -35,12 +42,16 @@ public class MeiTuanAppAccessibilityService extends AccessibilityService {
             for (AccessibilityNodeInfo accessibilityNodeInfo : accessibilityNodeInfos) {
                 Log.e("tag-", "----" + accessibilityNodeInfo.getContentDescription() + "----" + eventType);
                 String contentDescription = (String) accessibilityNodeInfo.getContentDescription();
-                if ("外卖".equals(contentDescription)){
+                if ("外卖".equals(contentDescription)) {
                     AccessibilityHelper.performClick(accessibilityNodeInfo);
                 }
             }
         }
-
+        try {
+            mtAppProcess.process(processStatus,mClassName,eventType,getRoot());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
