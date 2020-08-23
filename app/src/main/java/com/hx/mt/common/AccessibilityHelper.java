@@ -4,11 +4,14 @@ import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.annotation.RequiresApi;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
@@ -130,6 +133,17 @@ public class AccessibilityHelper {
             List<AccessibilityNodeInfo> list = nodeInfo.findAccessibilityNodeInfosByViewId(resId);
             if (list != null && !list.isEmpty()) {
                 return list.get(0);
+            }
+        }
+        return null;
+    }
+
+    public static List<AccessibilityNodeInfo> findNodeInfosByResId(AccessibilityNodeInfo nodeInfo, String resId) {
+        if (nodeInfo == null) return null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            List<AccessibilityNodeInfo> list = nodeInfo.findAccessibilityNodeInfosByViewId(resId);
+            if (list != null && !list.isEmpty()) {
+                return list;
             }
         }
         return null;
@@ -264,7 +278,7 @@ public class AccessibilityHelper {
             List<AccessibilityNodeInfo> txtNodeInfoList = root.findAccessibilityNodeInfosByText(text);
             if (txtNodeInfoList == null || txtNodeInfoList.isEmpty()) {
                 Log.e("ny", "没有找到" + text + "按钮");
-             //   findNodeByTextAndPerformClick(root,text);
+                //   findNodeByTextAndPerformClick(root,text);
                 return false;
             }
             AccessibilityNodeInfo clickNode = null;
@@ -319,7 +333,7 @@ public class AccessibilityHelper {
         for (int i = 0; i < nodeInfo.getChildCount(); i++) {
             AccessibilityNodeInfo node = nodeInfo.getChild(i);
             CharSequence contentDescription = node.getContentDescription();
-            Log.e("tag-contentDescription", "----" + contentDescription + "----" );
+            Log.e("tag-contentDescription", "----" + contentDescription + "----");
             if (des.equals(node.getContentDescription())) {
                 return node;
             }
@@ -415,28 +429,41 @@ public class AccessibilityHelper {
 
     //move 事件
     @TargetApi(23)
-    public static void performMoveDown(AccessibilityNodeInfo nodeInfo) {
+    public static boolean performMoveDown(AccessibilityNodeInfo nodeInfo) {
         if (nodeInfo == null) {
-            return;
+            return false;
         }
-        nodeInfo.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_DOWN.getId());
+        return nodeInfo.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_DOWN.getId());
     }
 
 
     //ACTION_SCROLL_FORWARD 事件
-    public static void perform_scroll_forward(AccessibilityNodeInfo nodeInfo) {
+    public static boolean perform_scroll_forward(AccessibilityNodeInfo nodeInfo) {
         if (nodeInfo == null) {
-            return;
+            return false;
         }
-        nodeInfo.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+        return nodeInfo.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
     }
 
-    //ACTION_SCROLL_BACKWARD 后退事件
-    public static void perform_scroll_backward(AccessibilityNodeInfo nodeInfo) {
-        if (nodeInfo == null) {
-            return;
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    public static boolean perform_scroll_position(AccessibilityNodeInfo nodeInfo, int position) {
+        Bundle arguments = new Bundle();
+        arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_ROW_INT, position);
+        if (nodeInfo==null){
+            return false;
         }
-        nodeInfo.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
+        return nodeInfo.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_TO_POSITION.getId(), arguments);
+    }
+
+
+
+
+    //ACTION_SCROLL_BACKWARD 后退事件
+    public static boolean perform_scroll_backward(AccessibilityNodeInfo nodeInfo) {
+        if (nodeInfo == null) {
+            return false;
+        }
+        return nodeInfo.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
     }
 
     //粘贴
@@ -470,14 +497,14 @@ public class AccessibilityHelper {
             return Collections.EMPTY_LIST;
         }
         int childCount = root.getChildCount();
-        Log.e("childCount",""+childCount);
+        Log.e("childCount", "" + childCount);
         for (int i = 0; i < childCount; i++) {
             AccessibilityNodeInfo rootChild = root.getChild(i);
-            Log.e("rootChild",rootChild.toString());
-            Log.e("rootChild-",i+"");
+            Log.e("rootChild", rootChild.toString());
+            Log.e("rootChild-", i + "");
             if (rootChild != null) {
                 String s = rootChild.getClassName().toString();
-                Log.e("rootChildClassName",s );
+                Log.e("rootChildClassName", s);
                 if (className.equals(rootChild.getClassName().toString().trim())) {
                     list.add(rootChild);
                 }
@@ -500,6 +527,7 @@ public class AccessibilityHelper {
         }
         return list;
     }
+
     public static void traverseNodeClassToList1(AccessibilityNodeInfo node, List<AccessibilityNodeInfo> list) {
         if (node == null) {
             return;
@@ -513,5 +541,28 @@ public class AccessibilityHelper {
                 }
             }
         }
+    }
+
+
+    /**
+     * edit内 粘贴内容
+     * @param root
+     * @param message
+     * @param accessibilityService
+     */
+    public static void pasteText(AccessibilityNodeInfo root, String message,AccessibilityService accessibilityService) {
+        AccessibilityNodeInfo target = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
+        Bundle arguments = new Bundle();
+        arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT,
+                AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD);
+        arguments.putBoolean(AccessibilityNodeInfo.ACTION_ARGUMENT_EXTEND_SELECTION_BOOLEAN,
+                true);
+        target.performAction(AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY,
+                arguments);
+        target.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
+        ClipData clip = ClipData.newPlainText("message", message);
+        ClipboardManager clipboardManager = (ClipboardManager) accessibilityService.getSystemService(Context.CLIPBOARD_SERVICE);
+        clipboardManager.setPrimaryClip(clip);
+        target.performAction(AccessibilityNodeInfo.ACTION_PASTE);
     }
 }

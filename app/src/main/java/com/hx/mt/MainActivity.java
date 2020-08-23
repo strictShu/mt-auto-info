@@ -10,7 +10,9 @@ import android.widget.Toast;
 
 import com.hx.mt.common.AccessibilityHelper;
 import com.hx.mt.common.MtAppConst;
+import com.hx.mt.common.ShopInfo;
 import com.hx.mt.mt.R;
+import com.hx.mt.util.HttpRequestUtil;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -24,6 +26,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                openMeiTuan();
+              /*  HttpRequestUtil httpRequestUtil = new HttpRequestUtil(null);
+                ShopInfo shopInfo = new ShopInfo();
+                shopInfo.setShopName("test");
+                shopInfo.setShopSearchAddress("test");
+                shopInfo.setShopPhone("123456");
+                shopInfo.setShopAreaId("test");
+                shopInfo.setShopSales("test");
+                shopInfo.setShopStar("test");
+                shopInfo.setShopAddress("test");
+                httpRequestUtil.insertShopInfo(shopInfo);*/
             }
         });
     }

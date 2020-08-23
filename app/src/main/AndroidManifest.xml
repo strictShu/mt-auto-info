@@ -34,6 +34,8 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
 
     <application
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:name="com.hx.mt.MyApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"

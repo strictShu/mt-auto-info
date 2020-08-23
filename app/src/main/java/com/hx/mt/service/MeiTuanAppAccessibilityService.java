@@ -20,27 +20,19 @@ public class MeiTuanAppAccessibilityService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
-        mtAppProcess = new MtAppProcess();
-        processStatus = new ProcessStatus();
-        Log.e("tag-mTypelassName", "sucess");
+        mtAppProcess = new MtAppProcess(this);
+        Log.e("process-", "sucess");
     }
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        // 此方法是在主线程中回调过来的，所以消息是阻塞执行的
-        // 获取包名
         String mClassName = (String) event.getClassName();
         int eventType = event.getEventType();
-        System.err.println("------------------------------------------------------");
-        Log.e("tag-mTypelassName", "----" + mClassName + "----" + eventType);
+        Log.e("process-", "----" + mClassName + "----" + eventType);
         if (mClassName.equals(MtAppConst.MainActivity)) {
-            //  AccessibilityHelper.findNodeByTextAndPerformClick(getRoot(), "骑车");
-//            AccessibilityNodeInfo nodeInfo = AccessibilityHelper.findNodeInfosByDes(getRoot(), "外卖");
-//            AccessibilityHelper.performClick(nodeInfo);
-
             List<AccessibilityNodeInfo> accessibilityNodeInfos = AccessibilityHelper.traverseNodeByClassList(getRoot(), "android.view.View");
             for (AccessibilityNodeInfo accessibilityNodeInfo : accessibilityNodeInfos) {
-                Log.e("tag-", "----" + accessibilityNodeInfo.getContentDescription() + "----" + eventType);
+                Log.e("process-", "----" + accessibilityNodeInfo.getContentDescription() + "----" + eventType);
                 String contentDescription = (String) accessibilityNodeInfo.getContentDescription();
                 if ("外卖".equals(contentDescription)) {
                     AccessibilityHelper.performClick(accessibilityNodeInfo);
@@ -48,8 +40,8 @@ public class MeiTuanAppAccessibilityService extends AccessibilityService {
             }
         }
         try {
-            mtAppProcess.process(processStatus,mClassName,eventType,getRoot());
-        } catch (InterruptedException e) {
+            mtAppProcess.process(mClassName, eventType, getRoot());
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

@@ -9,6 +9,8 @@ public class ShopInfo {
     private String shopSales;
     private String shopStar;
     private String shopPhone;
+    private String shopAreaId;
+    private String shopSearchAddress;
 
     public String getShopName() {
         return shopName;
@@ -26,21 +28,20 @@ public class ShopInfo {
         this.shopAddress = shopAddress;
     }
 
+    public String getShopSales() {
+        return shopSales;
+    }
+
+    public void setShopSales(String shopSales) {
+        this.shopSales = shopSales;
+    }
+
     public String getShopStar() {
         return shopStar;
     }
 
     public void setShopStar(String shopStar) {
         this.shopStar = shopStar;
-    }
-
-    public String getShopSales() {
-
-        return shopSales;
-    }
-
-    public void setShopSales(String shopSales) {
-        this.shopSales = shopSales;
     }
 
     public String getShopPhone() {
@@ -51,6 +52,22 @@ public class ShopInfo {
         this.shopPhone = shopPhone;
     }
 
+    public String getShopAreaId() {
+        return shopAreaId;
+    }
+
+    public void setShopAreaId(String shopAreaId) {
+        this.shopAreaId = shopAreaId;
+    }
+
+    public String getShopSearchAddress() {
+        return shopSearchAddress;
+    }
+
+    public void setShopSearchAddress(String shopSearchAddress) {
+        this.shopSearchAddress = shopSearchAddress;
+    }
+
     @Override
     public String toString() {
         return "ShopInfo{" +
@@ -59,6 +76,8 @@ public class ShopInfo {
                 ", shopSales='" + shopSales + '\'' +
                 ", shopStar='" + shopStar + '\'' +
                 ", shopPhone='" + shopPhone + '\'' +
+                ", shopAreaId='" + shopAreaId + '\'' +
+                ", shopSearchAddress='" + shopSearchAddress + '\'' +
                 '}';
     }
 }
