@@ -277,7 +277,7 @@ public class AccessibilityHelper {
         try {
             List<AccessibilityNodeInfo> txtNodeInfoList = root.findAccessibilityNodeInfosByText(text);
             if (txtNodeInfoList == null || txtNodeInfoList.isEmpty()) {
-                Log.e("ny", "没有找到" + text + "按钮");
+                Log.e("process", "没有找到" + text + "按钮");
                 //   findNodeByTextAndPerformClick(root,text);
                 return false;
             }
@@ -285,7 +285,7 @@ public class AccessibilityHelper {
             for (AccessibilityNodeInfo nodeInfo : txtNodeInfoList) {
                 if (nodeInfo.getText() != null && text.equals(nodeInfo.getText().toString())) {
                     clickNode = nodeInfo;
-                    Log.e("text", "text= " + nodeInfo.getText());
+                    Log.e("process", "text= " + nodeInfo.getText());
                 }
             }
 
@@ -304,7 +304,7 @@ public class AccessibilityHelper {
                 return result;
             }
         } catch (Exception e) {
-            Log.e("Exception", e.toString());
+            Log.e("process", e.toString());
             e.printStackTrace();
         }
         Log.e("null", "clickNode is null");
@@ -408,14 +408,14 @@ public class AccessibilityHelper {
     /**
      * 点击事件
      */
-    public static void performClick(AccessibilityNodeInfo nodeInfo) {
+    public static boolean performClick(AccessibilityNodeInfo nodeInfo) {
         if (nodeInfo == null) {
-            return;
+            return false;
         }
         if (nodeInfo.isClickable()) {
-            nodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            return nodeInfo.performAction(AccessibilityNodeInfo.ACTION_CLICK);
         } else {
-            performClick(nodeInfo.getParent());
+            return performClick(nodeInfo.getParent());
         }
     }
 
@@ -449,13 +449,11 @@ public class AccessibilityHelper {
     public static boolean perform_scroll_position(AccessibilityNodeInfo nodeInfo, int position) {
         Bundle arguments = new Bundle();
         arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_ROW_INT, position);
-        if (nodeInfo==null){
+        if (nodeInfo == null) {
             return false;
         }
         return nodeInfo.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_TO_POSITION.getId(), arguments);
     }
-
-
 
 
     //ACTION_SCROLL_BACKWARD 后退事件
@@ -546,11 +544,12 @@ public class AccessibilityHelper {
 
     /**
      * edit内 粘贴内容
+     *
      * @param root
      * @param message
      * @param accessibilityService
      */
-    public static void pasteText(AccessibilityNodeInfo root, String message,AccessibilityService accessibilityService) {
+    public static void pasteText(AccessibilityNodeInfo root, String message, AccessibilityService accessibilityService) {
         AccessibilityNodeInfo target = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
         Bundle arguments = new Bundle();
         arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT,

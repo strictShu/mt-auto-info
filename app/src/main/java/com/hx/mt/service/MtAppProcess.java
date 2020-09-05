@@ -4,11 +4,10 @@ import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.GestureDescription;
 import android.graphics.Path;
 import android.os.Build;
-import android.os.SystemClock;
+import android.os.Handler;
 import android.support.annotation.RequiresApi;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import com.hx.mt.MyApp;
@@ -19,14 +18,13 @@ import com.hx.mt.common.ShopInfo;
 import com.hx.mt.util.HttpRequestUtil;
 import com.hx.mt.util.ShopCloseException;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hx.mt.common.MtAppConst.*;
+
 
 /*
  * 美团app  外卖流程控制辅助
@@ -42,13 +40,13 @@ public class MtAppProcess implements HttpRequestUtil.OnResultCallback {
 
     private ConcurrentHashMap concurrentHashMap = new ConcurrentHashMap();
 
-    private ConcurrentHashMap concurrentPage = new ConcurrentHashMap();
+    private ConcurrentHashMap<String, Long> concurrentPage = new ConcurrentHashMap<String, Long>();
 
     private HttpRequestUtil httpRequestUtil;
 
     private ProcessStatus processStatus;
 
-    private int pageSize = 100;
+    private int pageSize = 500;
 
     private boolean chenck = true;
 
@@ -57,13 +55,46 @@ public class MtAppProcess implements HttpRequestUtil.OnResultCallback {
         httpRequestUtil = new HttpRequestUtil(this);
         processStatus = new ProcessStatus();
         processStatus.setCurrentStatus("get:address");
+        handler.postDelayed(runnable, 2000);
     }
 
-
+    Handler handler = new Handler();
+    Runnable runnable = new Runnable() {
+        @Override
+        public void run() {
+            Log.e("process-", "当前页面保存数量:" + concurrentPage.keySet().size());
+            for (String o : concurrentPage.keySet()) {
+                Log.e("process-", "当前页面" + o);
+                long time = concurrentPage.get(o);
+                long currentTimeMillis = System.currentTimeMillis();
+                long stopTime = currentTimeMillis - time;
+                if (stopTime > 60 * 1000) {
+                    Log.e("process-", "当前页面,已经停止超过 60s" + stopTime / 1000 + "-页面" + o);
+                    performGlobalBackAction();
+                }
+            }
+             handler.postDelayed(this, 2000);
+        }
+    };
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void process(String mClassName, int eventType, AccessibilityNodeInfo root) throws InterruptedException {
         switch (mClassName) {
+            case MainActivity:
+                List<AccessibilityNodeInfo> accessibilityNodeInfos = AccessibilityHelper.traverseNodeByClassList(root, "android.view.View");
+                for (AccessibilityNodeInfo accessibilityNodeInfo : accessibilityNodeInfos) {
+                    Log.e("process-", "----" + accessibilityNodeInfo.getContentDescription() + "----" + eventType);
+                    String contentDescription = (String) accessibilityNodeInfo.getContentDescription();
+                    if ("外卖".equals(contentDescription)) {
+                        processStatus.setCurrentStatus("get:address");
+                        removePage(TakeoutActivity);
+                        removePage(WMRestaurantActivity);
+                        removePage(LocateManuallyActivity);
+                        removePage(SCSuperMarketActivity);
+                        AccessibilityHelper.performClick(accessibilityNodeInfo);
+                    }
+                }
+                break;
             //商家页面
             case MtAppConst
                     .WMRestaurantActivity:
@@ -86,14 +117,23 @@ public class MtAppProcess implements HttpRequestUtil.OnResultCallback {
                 clickPhoneButton(root);
                 break;
             case MtAppConst.PhoneDialog:
+                AccessibilityNodeInfo noGPSNodeInfo = AccessibilityHelper.findNodeInfosById(root, noGPS);
+                AccessibilityNodeInfo cancelButtonNodeInfo = AccessibilityHelper.findNodeInfosById(root, cancelButton);
+                if (noGPSNodeInfo != null && cancelButtonNodeInfo != null&&noGPSNodeInfo.getText().equals("定位失败")) {
+                    AccessibilityHelper.performClick(cancelButtonNodeInfo);
+                }
                 getPhoneInfo(root);
                 break;
+
+            //商家列表页面
             case TakeoutActivity:
                 if (currentPageIng(TakeoutActivity)) {
                     break;
                 }
                 removePage("shopInfo");
+                removePage(SCSuperMarketActivity);
                 removePage(LocateManuallyActivity);
+                Log.e("process-", "当前状态:" + processStatus.getCurrentStatus());
                 if (processStatus.getCurrentStatus().equals("get:address")) {
                     sleepSeconds(1);
                     //点击右上角坐标
@@ -106,34 +146,77 @@ public class MtAppProcess implements HttpRequestUtil.OnResultCallback {
                 //点击条目
                 clickShopItem(root, mClassName, eventType);
                 break;
+
+            //区域内 少量或者没有外卖时会出现的页面
             case SCSuperMarketActivity:
                 if (currentPageIng(SCSuperMarketActivity)) {
                     break;
                 }
-                sleepMillsSeconds(500);
+                //atomicInteger.set(0);
+                // processStatus.setCurrentStatus("get:address");
+                sleepMillsSeconds(5000);
                 removePage(TakeoutActivity);
                 removePage(WMRestaurantActivity);
                 removePage(LocateManuallyActivity);
-                processStatus.setCurrentStatus("get:address");
-                performGlobalBackAction();
                 performGlobalBackAction();
                 break;
+            //更换位置.
             case LocateManuallyActivity:
                 if (currentPageIng(LocateManuallyActivity)) {
                     break;
                 }
+                httpRequestUtil.getAllAddress();
                 sleepSeconds(1);
                 AccessibilityNodeInfo nodeInfosById = AccessibilityHelper.findNodeInfosById(root, shopAddressEditId);
                 //AccessibilityHelper.performClick(nodeInfosById);
                 topGestureClick((float) 0.15);
                 sleepMillsSeconds(500);
-                httpRequestUtil.getAddress(nodeInfosById, processStatus);
-                removePage(TakeoutActivity);
-                removePage(WMRestaurantActivity);
-                removePage(LocateManuallyActivity);
-                removePage(SCSuperMarketActivity);
+                if (concurrentPage.containsKey("search")) {
+                    AccessibilityHelper.performSetText(nodeInfosById, processStatus.getSearchAddress());
+                    clickSearchAddressResult(accessibilityService.getRoot(), nodeInfosById);
+                    removePage("search");
+                } else {
+                    httpRequestUtil.getAddress(nodeInfosById, processStatus);
+                }
+                removeAll();
+                break;
+            case WmRNActivity:
+                if (currentPageIng(WmRNActivity)) {
+                    break;
+                }
+                sleepSeconds(3);
+                topGestureClick((float) 0.06);
+                // fix me
+                break;
+            case "android.widget.EditText":
+                if (concurrentPage.containsKey(WmRNActivity)) {
+                    removePage(WmRNActivity);
+                    List<AccessibilityNodeInfo> editNodeInfoList = AccessibilityHelper.traverseNodeByClassToList(root, "android.widget.EditText");
+                    if (editNodeInfoList.size() > 0) {
+                        AccessibilityNodeInfo nodeInfo = editNodeInfoList.get(0);
+                        Log.e("process-", "当前状态:" + nodeInfo);
+                        //AccessibilityNodeInfo citySearchEditNodeInfo = AccessibilityHelper.findNodeInfosById(root, shopAddressEditId);
+                        sleepMillsSeconds(500);
+                        String citySearh = processStatus.getCurrentPage();
+                        Log.e("process-", "当前状态:" + citySearh);
+                        AccessibilityHelper.performSetText(nodeInfo, citySearh);
+                        removeAll();
+                        concurrentPage.put("search", System.currentTimeMillis());
+                        sleepSeconds(2);
+                        topGestureClick((float) 0.15);
+                    } else {
+                        Log.e("process-", "当前状态: 无法获取输入框");
+                    }
+                }
                 break;
         }
+    }
+
+    private void removeAll() {
+        removePage(TakeoutActivity);
+        removePage(WMRestaurantActivity);
+        removePage(LocateManuallyActivity);
+        removePage(SCSuperMarketActivity);
     }
 
     private void clickNearShop(AccessibilityNodeInfo root, String mClassName, int eventType) {
@@ -141,11 +224,9 @@ public class MtAppProcess implements HttpRequestUtil.OnResultCallback {
         AccessibilityNodeInfo nearShopNode = AccessibilityHelper.findNodeInfosById(root, nearShop);
         try {
             if (nearShopNode != null) {
+                int childCount = nearShopNode.getChildCount();
                 AccessibilityNodeInfo child = nearShopNode.getChild(0);
-                if (child != null && child.getChildCount() > 0) {
-                    AccessibilityNodeInfo child1 = child.getChild(0);
-                    AccessibilityHelper.performClick(child1);
-                }
+                AccessibilityHelper.performClick(child);
 
             }
         } catch (Exception e) {
@@ -181,6 +262,7 @@ public class MtAppProcess implements HttpRequestUtil.OnResultCallback {
             processStatus.setCurrentStatus("address:success");
 
         } else {
+            Log.e("process-", "搜索无结果");
             // TODO: 2020/8/17   搜索无结果 需要重新请求接口
             // if (editNodeInfo.getClassName().equals(LocateManuallyActivity))
             httpRequestUtil.getAddress(editNodeInfo, processStatus);
@@ -196,7 +278,7 @@ public class MtAppProcess implements HttpRequestUtil.OnResultCallback {
         if (concurrentPage.containsKey(page)) {
             return true;
         }
-        concurrentPage.put(page, true);
+        concurrentPage.put(page, System.currentTimeMillis());
         Log.e("process-", "获取concurrentPage" + concurrentPage + concurrentPage.containsKey(page));
         return false;
     }
@@ -228,11 +310,12 @@ public class MtAppProcess implements HttpRequestUtil.OnResultCallback {
 
     private void clickShopItem(AccessibilityNodeInfo root, String mClassName, int eventType) throws InterruptedException {
         try {
-            sleepSeconds(3);
+            sleepSeconds(2);
             List<AccessibilityNodeInfo> nodeInfosByResId = AccessibilityHelper.findNodeInfosByResId(root, MtAppConst.shopListByNameClick);
             if (nodeInfosByResId == null) {
                 Log.e("process-", "--当前列表为空 --");
-                clickShopItem(root, mClassName, eventType);
+                // clickShopItem(root, mClassName, eventType);
+                topScroll(root, mClassName, eventType);
                 return;
             }
             for (int i = 0; i < nodeInfosByResId.size(); i++) {
@@ -339,8 +422,21 @@ public class MtAppProcess implements HttpRequestUtil.OnResultCallback {
 
 
     private void clickPhoneButton(AccessibilityNodeInfo root) {
+        sleepMillsSeconds(500);
         AccessibilityNodeInfo phoneButtoNodeInfo = AccessibilityHelper.findNodeInfosById(root, MtAppConst.PhoneButton);
-        AccessibilityHelper.performClick(phoneButtoNodeInfo);
+        boolean isClickTellButton = AccessibilityHelper.performClick(phoneButtoNodeInfo);
+        if (!isClickTellButton) {
+            Log.e("process-", "点击电话按钮异常!!!!");
+            if (i < 3) {
+                i++;
+                clickPhoneButton(root);
+            } else {
+                i = 0;
+                performGlobalBackAction();
+            }
+        } else {
+            Log.e("process-", "成功点击电话按钮");
+        }
     }
 
     /**
@@ -379,7 +475,7 @@ public class MtAppProcess implements HttpRequestUtil.OnResultCallback {
             String shopStar = (String) shopStarNodeInfo.getText();
             shopInfo.setShopStar(shopStar);
         } catch (Exception e) {
-            Log.e("process-", "获取shop-star fail");
+            Log.e("process-", "获取ShopStar fail");
         }
         return shopInfo;
 
@@ -399,16 +495,31 @@ public class MtAppProcess implements HttpRequestUtil.OnResultCallback {
         }
     }
 
-    private void clickStoreName(AccessibilityNodeInfo root) throws InterruptedException {
+    private int i = 0;
+
+    private void clickStoreName(AccessibilityNodeInfo root) {
         sleepMillsSeconds(1500);
-        AccessibilityHelper.findNodeByTextAndPerformClick(root, "商家");
+        boolean isClickShop = AccessibilityHelper.findNodeByTextAndPerformClick(root, "商家");
+        if (!isClickShop) {
+            i++;
+            if (i < 3) {
+                Log.e("process-", "点击商家异常,尝试重新点击" + i);
+                sleepMillsSeconds(1500);
+                clickStoreName(root);
+            } else {
+                i = 0;
+                performGlobalBackAction();
+            }
+        } else {
+            Log.e("process-", "成功点击商家");
+        }
+
     }
 
     /**
      * 后退
      */
     private boolean performGlobalBackAction() {
-        concurrentPage.put("start", true);
         return accessibilityService.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
     }
 
@@ -440,18 +551,37 @@ public class MtAppProcess implements HttpRequestUtil.OnResultCallback {
     }
 
     @Override
-    public void getResult(Object t, AccessibilityNodeInfo nodeInfo, ProcessStatus processStatus) {
+    public void getResult(Object t, AccessibilityNodeInfo nodeInfo, ProcessStatus processStatus, List<String> allArrdressList) {
+        if (allArrdressList != null) {
+            allArrdressList.parallelStream().forEach(address -> concurrentHashMap.put(address, true));
+            return;
+        }
         String[] split = (String[]) t;
         //String searhAddress ="美联广场";
-        String searhAddress = split[1];
+        String searhAddress = split[2];
+        String citySearch = split[1];
         if (shopInfo == null) {
             shopInfo = new ShopInfo();
         }
         shopInfo.setShopAreaId(split[0]);
         shopInfo.setShopSearchAddress(searhAddress);
-        AccessibilityHelper.performSetText(nodeInfo, searhAddress);
-        clickSearchAddressResult(accessibilityService.getRoot(), nodeInfo);
+        //判断当前位置是否 与citySearch 相等
+        AccessibilityNodeInfo root = accessibilityService.getRoot();
+        AccessibilityNodeInfo cityNodeInfo = AccessibilityHelper.findNodeInfosById(root, cityName);
+        if (cityNodeInfo != null) {
+            String cityName = (String) cityNodeInfo.getText();
+            if (!cityName.equals(citySearch)) {
+                processStatus.setCurrentPage(citySearch);
+                processStatus.setSearchAddress(searhAddress);
+                //城市不同
+                AccessibilityNodeInfo nodeInfosById = AccessibilityHelper.findNodeInfosById(root, searchCtiyClick);
+                AccessibilityHelper.performClick(nodeInfosById);
+                return;
+            } else {
+                AccessibilityHelper.performSetText(nodeInfo, searhAddress);
+                clickSearchAddressResult(accessibilityService.getRoot(), nodeInfo);
+            }
+        }
+
     }
-
-
 }

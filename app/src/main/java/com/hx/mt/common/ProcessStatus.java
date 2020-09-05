@@ -4,6 +4,15 @@ public class ProcessStatus {
     private String currentPage;
     private String currentStatus;
 
+    private String searchAddress;
+
+    public String getSearchAddress() {
+        return searchAddress;
+    }
+
+    public void setSearchAddress(String searchAddress) {
+        this.searchAddress = searchAddress;
+    }
 
     public String getCurrentPage() {
         return currentPage;

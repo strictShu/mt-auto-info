@@ -44,8 +44,8 @@ public class MtAppConst {
     //店铺位置
     public static final String ShopAddress = "com.sankuai.meituan:id/txt_poi_address";
     //11.0版本
-    //public static final String ShopStar = "com.sankuai.meituan:id/tv_shop_score_grade";
-    public static final String ShopStar = "com.sankuai.meituan:id/tv_shop_score_grade_no_ugc";
+    public static final String ShopStar = "com.sankuai.meituan:id/tv_shop_score_grade";
+    //public static final String ShopStar = "com.sankuai.meituan:id/tv_shop_score_grade_no_ugc";
     //手机号按钮
     public static final String PhoneButton = "com.sankuai.meituan:id/view_poi_phone";
     //手机号dialog
@@ -66,4 +66,13 @@ public class MtAppConst {
     // 打烊:
     public static final String timeOut = "com.sankuai.meituan:id/txt_rest_pop_title";
 
+    //判断当前城市
+    public static final String searchCtiyClick = "com.sankuai.meituan:id/address_map_locate_container";
+    //当前定位城市名称
+    public static final String cityName = "com.sankuai.meituan:id/wm_address_city_location_text";
+    //
+    public static final String WmRNActivity =   "com.sankuai.waimai.reactnative.WmRNActivity";
+
+    public static final String noGPS ="com.sankuai.meituan:id/dialog_title";
+    public static final String cancelButton ="com.sankuai.meituan:id/dialog_button_negative";
 }
