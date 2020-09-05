@@ -23,7 +23,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hx.mt.common.MtAppConst.*;
+import static com.hx.mt.common.MtAppConst.LocateManuallyActivity;
+import static com.hx.mt.common.MtAppConst.MainActivity;
+import static com.hx.mt.common.MtAppConst.SCSuperMarketActivity;
+import static com.hx.mt.common.MtAppConst.TakeoutActivity;
+import static com.hx.mt.common.MtAppConst.WMRestaurantActivity;
+import static com.hx.mt.common.MtAppConst.WmRNActivity;
+import static com.hx.mt.common.MtAppConst.cancelButton;
+import static com.hx.mt.common.MtAppConst.cityName;
+import static com.hx.mt.common.MtAppConst.nearShop;
+import static com.hx.mt.common.MtAppConst.noGPS;
+import static com.hx.mt.common.MtAppConst.searchCtiyClick;
+import static com.hx.mt.common.MtAppConst.shopAddressEditId;
+import static com.hx.mt.common.MtAppConst.shopAddressRecycleViewId;
 
 
 /*

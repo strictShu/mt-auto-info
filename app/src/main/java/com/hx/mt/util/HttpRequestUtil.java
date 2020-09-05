@@ -6,14 +6,12 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import com.hx.mt.common.ProcessStatus;
 import com.hx.mt.common.ShopInfo;
 import com.zhy.http.okhttp.OkHttpUtils;
-import com.zhy.http.okhttp.callback.Callback;
 import com.zhy.http.okhttp.callback.StringCallback;
 
 import java.util.Arrays;
 import java.util.List;
 
 import okhttp3.Call;
-import okhttp3.Response;
 
 public class HttpRequestUtil {
     //    http://erp.shandongyunpin.com:8099/GetADData.aspx
@@ -65,7 +63,6 @@ public class HttpRequestUtil {
                     public void onError(Call call, Exception e, int id) {
                         Log.e("process-", "获取地理位置error", e);
                     }
-
                     @Override
                     public void onResponse(String response, int id) {
                         String[] split = response.split("\\|\\|");
@@ -85,7 +82,6 @@ public class HttpRequestUtil {
                     public void onError(Call call, Exception e, int id) {
                         Log.e("process-", "获取全部商店名称 fail", e);
                     }
-
                     @Override
                     public void onResponse(String response, int id) {
                         Log.e("process-", "获取全部商店名称 success");
